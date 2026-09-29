@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Gestão de Carga e Box</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+<style>
+:root{--primary:#2563eb;--bg:#f8fafc;--card-bg:#fff;--text:#0f172a;--text-secondary:#64748b;--border:#e2e8f0;--success:#10b981;--danger:#ef4444;--radius:12px;--header-bg:linear-gradient(135deg,#1e293b,#0f172a);--status-active-bg:#dbeafe;--input-bg:#fff;--highlight-loja-bg:#f0f9ff;--highlight-loja-border:#0284c7;--highlight-loja-text:#0369a1;--warning-bg:#fffbeb;--warning-text:#b45309;--warning-border:#f59e0b;--card-destaque-bg:#dbeafe;--card-destaque-border:#3b82f6;--problema-bg:#fef3c7;--problema-border:#f59e0b}
+[data-theme="dark"]{--bg:#0f172a;--card-bg:#1e293b;--text:#f8fafc;--text-secondary:#94a3b8;--border:#334155;--header-bg:linear-gradient(135deg,#0f172a,#020617);--status-active-bg:#1e3a8a;--input-bg:#0f172a;--highlight-loja-bg:#0c4a6e;--highlight-loja-border:#38bdf8;--highlight-loja-text:#e0f2fe;--warning-bg:#451a03;--warning-text:#fcd34d;--warning-border:#f59e0b;--card-destaque-bg:#1e3a8a;--card-destaque-border:#60a5fa;--problema-bg:#78350f;--problema-border:#f59e0b}
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Inter',sans-serif;-webkit-tap-highlight-color:transparent}
+body{background-color:var(--bg);color:var(--text);padding-bottom:40px}
+.fa-solid, .fa-brands, .fa-regular { font-size: 1.15em; }
+.tab-btn i { font-size: 1.2rem; margin-bottom: 4px; }
+.btn-icon { min-width: 46px; min-height: 46px; font-size: 1.1rem; padding: 0; }
+.btn { padding: 12px 14px; font-size: 0.9rem; }
+.btn i { font-size: 1.1rem; margin-right: 6px; }
+.checkbox-container input { width: 22px; height: 22px; accent-color: var(--success); cursor: pointer; }
+header{background:var(--header-bg);color:#fff;padding:1rem;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:1001;gap:8px}
+header h1{font-size:1.1rem;font-weight:700;display:flex;align-items:center;gap:8px;flex:1}
+.theme-toggle-btn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);color:#fff;padding:10px 14px;border-radius:20px;cursor:pointer;font-size:.9rem;font-weight:600;display:flex;align-items:center;gap:6px}
+.sticky-header{position:sticky;top:60px;z-index:1000;background:var(--bg);box-shadow:0 4px 6px -1px rgba(0,0,0,.1)}
+.nav-tabs{display:flex;justify-content:space-around;background:var(--card-bg);border-bottom:1px solid var(--border)}
+.tab-btn{flex:1;padding:14px 8px;border:none;background:none;font-weight:600;font-size:.75rem;color:var(--text-secondary);cursor:pointer;border-bottom:3px solid transparent;display:flex;flex-direction:column;align-items:center;gap:4px}
+.tab-btn.active{color:var(--primary);border-bottom-color:var(--primary)}
+.metrics-wrapper{padding:12px;border-bottom:1px solid var(--border)}
+.metrics-grid,.metrics-grid-3{display:grid;gap:10px;max-width:800px;margin:0 auto}
+.metrics-grid{grid-template-columns:repeat(4,1fr)}
+.metrics-grid-3{grid-template-columns:repeat(3,1fr)}
+.metric-card{background:var(--card-bg);padding:12px 4px;border-radius:12px;text-align:center;border:1px solid var(--border);display:flex;flex-direction:column;justify-content:center;align-items:center}
+.metric-card span{font-size:.65rem;color:var(--text-secondary);font-weight:800;text-transform:uppercase;margin-bottom:4px}
+.metric-card strong{font-size:1.3rem;color:var(--primary);font-weight:800;line-height:1}
+.container{max-width:800px;margin:15px auto;padding:0 12px}
+.card{background:var(--card-bg);border-radius:var(--radius);padding:16px;margin-bottom:15px;border:1px solid var(--border);position:relative}
+.card.card-destaque-azul{background:var(--card-destaque-bg);border:2px solid var(--card-destaque-border)}
+.card.card-com-problema{background:var(--problema-bg);border:2px solid var(--problema-border)}
+.card.box-oculto{opacity:.7;padding:10px 14px;margin-bottom:10px;background:#f1f5f9;border-color:#cbd5e1}
+.card.box-oculto.card-destaque-azul{background:var(--card-destaque-bg)!important;border:2px solid var(--card-destaque-border)!important;opacity:0.85}
+.card-minimizado{background:var(--success);color:white;padding:12px 16px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;border-radius:10px;border:none}
+.card-minimizado.card-com-problema{background:#f59e0b;color:#fff}
+.tab-content{display:none}
+.tab-content.active{display:block}
+.form-group{margin-bottom:14px}
+.form-group label{display:block;font-size:.85rem;font-weight:600;margin-bottom:6px;color:var(--text-secondary)}
+.form-control{width:100%;padding:12px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);border-radius:10px;font-size:1rem;outline:none}
+.input-lojas-destaque,.input-destaque-bg{background-color:var(--highlight-loja-bg)!important;border:1.5px solid var(--highlight-loja-border)!important;color:var(--highlight-loja-text)!important;font-weight:700!important}
+.box-badge{background-color:var(--primary);color:#fff;padding:6px 12px;border-radius:8px;font-size:1rem;font-weight:800;display:inline-flex;align-items:center;gap:8px}
+.box-badge.com-problema{background-color:#f59e0b}
+.capacidade-placa{font-size:.8rem;color:var(--primary);font-weight:700;margin-top:4px;display:inline-block;background:rgba(37,99,235,.1);padding:4px 10px;border-radius:6px;margin-left:4px}
+.btn-primary{background:var(--primary);color:#fff}
+.btn-danger{background:rgba(239,68,68,.15);color:var(--danger);border:1px solid rgba(239,68,68,.3)}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text)}
+.btn-success{background:var(--success);color:#fff}
+.btn-share{background:#25D366;color:#fff}
+.btn-icon{background:#475569;border:none;border-radius:10px;cursor:pointer;color:#fff;box-shadow:0 2px 4px rgba(0,0,0,.15);transition:all .2s;display:inline-flex;align-items:center;justify-content:center}
+.btn-icon:hover{background:#334155;transform:translateY(-1px)}
+.btn-icon:active{transform:translateY(0)}
+.btn-icon.btn-olho{background:#64748b}
+.btn-icon.btn-flag-on{background:#10b981}
+.btn-icon.btn-flag-off{background:#ef4444}
+.btn-icon.btn-excluir{background:#ef4444}
+.btn-reabrir{background:rgba(255,255,255,0.25);color:white;border:none;padding:8px 12px;border-radius:8px;cursor:pointer;font-size:.8rem;font-weight:700;display:flex;align-items:center;gap:6px}
+.actions-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:10px}
+.actions-grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px}
+.box-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:8px}
+.checkbox-container{display:flex;align-items:center;gap:10px;font-weight:700;cursor:pointer}
+.status-btn-group{display:flex;gap:8px;margin-bottom:12px;margin-top:14px}
+.status-btn{padding:12px 8px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-size:.8rem;font-weight:700;color:var(--text-secondary);cursor:pointer;flex:1;text-align:center}
+.status-btn.active{background:var(--status-active-bg);color:var(--primary);border-color:var(--primary)}
+.tabela-container{width:100%;overflow-x:auto;margin-top:10px}
+.tabela-relatorio{width:100%;border-collapse:collapse;font-size:.75rem;table-layout:fixed}
+.tabela-relatorio th,.tabela-relatorio td{padding:8px 6px;border-bottom:1px solid var(--border);vertical-align:middle;overflow:hidden;text-overflow:ellipsis}
+.tabela-relatorio th{background-color:#1e293b;color:#fff;font-weight:800;text-transform:uppercase;font-size:.65rem;text-align:center !important}
+.tabela-relatorio tr:nth-child(even){background-color:#f8fafc}
+.tabela-relatorio td.col-box{width:10%;text-align:center;font-weight:700}
+.tabela-relatorio td.col-carga{width:20%;text-align:left;font-family:monospace;font-size:.7rem}
+.tabela-relatorio td.col-placa{width:20%;text-align:left;font-weight:600;font-family:monospace;font-size:.7rem}
+.tabela-relatorio td.col-lojas{width:30%;text-align:right;font-weight:700;white-space:normal;word-break:break-word;line-height:1.3}
+.tabela-relatorio td.col-pallets{width:20%;text-align:right;font-weight:600;white-space:normal;word-break:break-word;line-height:1.3}
+.card-colapsavel .card-titulo{cursor:pointer;display:flex;justify-content:space-between;align-items:center;padding:4px 0}
+.card-colapsavel .card-titulo i.chevron{transition:transform .3s}
+.card-colapsavel.colapsado .card-conteudo{display:none}
+.card-colapsavel.colapsado .card-titulo i.chevron{transform:rotate(-90deg)}
+.grade-boxes{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin-bottom:10px;padding:8px;background:var(--card-bg);border-radius:var(--radius);border:1px solid var(--border)}
+.grade-box{aspect-ratio:1;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;font-weight:700;color:#fff;text-align:center;padding:3px}
+.grade-box.livre{background:#94a3b8}
+.grade-box.andamento{background:#f59e0b}
+.grade-box.pronto{background:#10b981}
+.grade-box.finalizado{background:#1e40af}
+.grade-box-numero{font-size:.85rem;font-weight:800}
+.grade-box-info{font-size:.5rem;opacity:.9;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.grade-box-loja{font-size:.45rem;color:#000;background:rgba(255,255,255,.85);border-radius:3px;margin-top:2px;padding:1px 3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;font-weight:600}
+.grade-legenda{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;font-size:.7rem;color:var(--text-secondary);margin-top:8px}
+.grade-legenda-item{display:flex;align-items:center;gap:5px}
+.grade-legenda-cor{width:12px;height:12px;border-radius:3px}
+.som-item{display:flex;justify-content:space-between;align-items:center;padding:12px;background:var(--bg);border-radius:10px;margin-bottom:10px;border:1px solid var(--border)}
+.som-item-info{display:flex;align-items:center;gap:12px;flex:1}
+.som-item-icon{font-size:1.4rem;width:34px;text-align:center}
+.som-item-nome{font-weight:600;font-size:.95rem}
+.som-teste-btn{background:var(--primary);color:#fff;border:none;padding:8px 14px;border-radius:8px;font-size:.8rem;cursor:pointer;font-weight:600}
+.toggle-container{display:flex;align-items:center;gap:10px}
+.toggle-switch{position:relative;width:54px;height:28px;display:inline-block}
+.toggle-switch input{opacity:0;width:0;height:0}
+.toggle-slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background-color:#cbd5e1;transition:.3s;border-radius:28px}
+.toggle-slider:before{position:absolute;content:"";height:22px;width:22px;left:3px;bottom:3px;background-color:#fff;transition:.3s;border-radius:50%}
+input:checked+.toggle-slider{background-color:var(--success)}
+input:checked+.toggle-slider:before{transform:translateX(26px)}
+.checkbox-group{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
+.checkbox-group label{display:flex;align-items:center;gap:6px;font-size:.9rem;font-weight:600;cursor:pointer}
+.problema-tooltip{position:relative;display:inline-block}
+.problema-tooltip .problema-text{visibility:hidden;opacity:0;background-color:#1e293b;color:#fff;text-align:center;border-radius:8px;padding:8px 12px;position:absolute;z-index:100;bottom:125%;left:50%;transform:translateX(-50%);font-size:.75rem;white-space:nowrap}
+.problema-tooltip:hover .problema-text,.problema-tooltip:active .problema-text{visibility:visible;opacity:1}
+.btn-consulta-flutuante{position:fixed;bottom:24px;right:24px;width:64px;height:64px;border-radius:50%;background:var(--primary);color:#fff;border:none;cursor:pointer;z-index:999;display:flex;align-items:center;justify-content:center;font-size:1.6rem;box-shadow:0 6px 20px rgba(37,99,235,.5);transition:all .2s}
+.btn-consulta-flutuante:hover{transform:scale(1.1);box-shadow:0 8px 25px rgba(37,99,235,.6)}
+.modal-consulta{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.6);z-index:2000;align-items:center;justify-content:center}
+.modal-consulta.active{display:flex}
+.modal-consulta-conteudo{background:var(--card-bg);border-radius:16px;padding:24px;max-width:500px;width:92%;max-height:85vh;overflow-y:auto}
+.modal-consulta-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.btn-fechar-modal{background:none;border:none;font-size:1.6rem;cursor:pointer;color:var(--text-secondary);padding:4px}
+.modal-tabs{display:flex;gap:6px;margin-bottom:18px;border-bottom:2px solid var(--border);flex-wrap:wrap}
+.modal-tab-btn{flex:1;padding:10px 6px;border:none;background:none;font-weight:600;font-size:.75rem;color:var(--text-secondary);cursor:pointer;border-bottom:3px solid transparent;min-width:80px}
+.modal-tab-btn.active{color:var(--primary);border-bottom-color:var(--primary)}
+.modal-tab-content{display:none}
+.modal-tab-content.active{display:block}
+.contador-badge{background:var(--primary);color:#fff;padding:3px 10px;border-radius:14px;font-size:.75rem;font-weight:700;margin-left:8px}
+.card-historico{background:var(--card-bg);border-radius:10px;padding:14px;margin-bottom:12px;border:1px solid var(--border)}
+.card-historico-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.card-historico-data{font-weight:700;color:var(--primary);font-size:1rem}
+.card-historico-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:.8rem;color:var(--text-secondary)}
+.card-historico-stats strong{color:var(--text);font-size:1rem;display:block}
+.lista-boxes-config{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-top:14px}
+.box-config-item{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center;font-size:.85rem;font-weight:700;color:var(--primary);cursor:pointer;transition:all .2s}
+.box-config-item:hover{background:var(--card-destaque-bg);border-color:var(--card-destaque-border)}
+.modal-relatorio{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(15,23,42,.9);z-index:3000;overflow-y:auto;padding:10px}
+.modal-relatorio.active{display:block}
+.modal-relatorio-conteudo{background:#fff;color:#0f172a;max-width:900px;margin:10px auto;border-radius:14px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.5);position:relative}
+.modal-relatorio-header{text-align:center;padding:24px 20px 18px;border-bottom:3px solid #2563eb;background:linear-gradient(135deg,#f0f9ff,#fff)}
+.modal-relatorio-header h2{font-size:1.5rem;font-weight:800;color:#0f172a;margin-bottom:6px}
+.modal-totais{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px}
+.modal-totais-card{background:#fff;border:2px solid #e2e8f0;border-radius:10px;padding:10px 6px;text-align:center}
+.modal-totais-card span{font-size:.65rem;font-weight:800;text-transform:uppercase;display:block;margin-bottom:4px;color:#64748b;letter-spacing:.5px}
+.modal-totais-card strong{font-size:1.5rem;font-weight:800;display:block;color:#2563eb;line-height:1}
+.modal-tabela{width:100%;border-collapse:collapse;font-size:.85rem;margin-top:10px}
+.modal-tabela thead th{background:#1e293b;color:#fff;padding:12px 8px;font-size:.75rem;font-weight:700;text-transform:uppercase;text-align:center}
+.modal-tabela td{padding:10px 8px;border-bottom:1px solid #e2e8f0;color:#0f172a;font-size:.8rem;vertical-align:middle}
+.modal-tabela tbody tr:nth-child(even){background:#f8fafc}
+.modal-rodape{display:flex;gap:10px;padding:18px 20px;background:#f8fafc;border-top:1px solid #e2e8f0;flex-wrap:wrap}
+.modal-rodape button{flex:1;min-width:120px;padding:14px;font-size:.9rem}
+.btn-voltar{position:absolute;top:18px;left:18px;background:rgba(0,0,0,.08);color:#64748b;border:none;width:44px;height:44px;border-radius:50%;font-size:1.2rem;cursor:pointer;z-index:3001;display:flex;align-items:center;justify-content:center;transition:all .2s}
+.btn-voltar:hover{background:rgba(0,0,0,.15);color:#0f172a}
+.btn-emergencia-config{background:#f59e0b;color:#fff;border:none;padding:14px;border-radius:10px;cursor:pointer;font-weight:700;font-size:.9rem;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:12px;width:100%;box-shadow:0 4px 10px rgba(245,158,11,.3)}
+@media print{@page{size:A4;margin:10mm}body{background:#fff!important;color:#000!important;padding:0!important}header,.sticky-header,.btn-consulta-flutuante,.modal-rodape,.btn-voltar,.no-print{display:none!important}.modal-relatorio{position:static!important;background:#fff!important;padding:0!important;display:block!important}.modal-relatorio-conteudo{box-shadow:none!important;margin:0!important;max-width:100%!important;border-radius:0!important}}
+</style>
+</head>
+<body>
+<header>
+<h1><i class="fa-solid fa-truck-ramp-box"></i> Logística</h1>
+<button class="theme-toggle-btn" onclick="alternarTema()"><i id="theme-icon" class="fa-solid fa-moon"></i></button>
+</header>
+<div class="sticky-header">
+<nav class="nav-tabs">
+<button class="tab-btn active" onclick="switchTab('tab1',this)"><i class="fa-solid fa-pen-to-square"></i> 1. Planejamento</button>
+<button class="tab-btn" onclick="switchTab('tab2',this)"><i class="fa-solid fa-list-check"></i> 2. Operação</button>
+<button class="tab-btn" onclick="switchTab('tab3',this)"><i class="fa-solid fa-file-invoice"></i> 3. Relatório</button>
+<button class="tab-btn" onclick="switchTab('tab4',this)"><i class="fa-solid fa-gear"></i> 4. Config</button>
+</nav>
+<div class="metrics-wrapper">
+<div id="m-tab1" class="metrics-grid"><div class="metric-card"><span>Boxes</span><strong id="t1-boxes">0</strong></div><div class="metric-card"><span>Caminhões</span><strong id="t1-caminhoes">0</strong></div><div class="metric-card"><span>Pallets</span><strong id="t1-pallets">0</strong></div><div class="metric-card"><span>Lojas</span><strong id="t1-lojas">0</strong></div></div>
+<div id="m-tab2" class="metrics-grid-3" style="display:none"><div class="metric-card"><span>Total Veículo</span><strong id="t2-placas">0</strong></div><div class="metric-card"><span>Total Loja</span><strong id="t2-lojas">0</strong></div><div class="metric-card"><span>Total Pallets</span><strong id="t2-pallets">0</strong></div></div>
+</div>
+</div>
+<div class="container">
+<div id="tab1" class="tab-content active">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+<button onclick="alternarVisibilidadeTodos(false)" class="btn-icon btn-olho" title="Ocultar Todos"><i class="fa-solid fa-eye-slash"></i></button>
+<button onclick="alternarVisibilidadeTodos(true)" class="btn-icon btn-olho" title="Mostrar Todos"><i class="fa-solid fa-eye"></i></button>
+<button onclick="alternarSelecaoTodos(true)" class="btn-icon btn-flag-on" title="Flagar Todos"><i class="fa-solid fa-flag"></i></button>
+<button onclick="alternarSelecaoTodos(false)" class="btn-icon btn-flag-off" title="Tirar Flag de Todos"><i class="fa-regular fa-flag"></i></button>
+</div>
+<button onclick="limparInformacoes()" class="btn btn-danger" style="width:auto;padding:10px 14px;font-size:.85rem"><i class="fa-solid fa-broom"></i> Limpar Dados</button>
+</div>
+<div id="lista-boxes-tab1"></div>
+<div class="card" style="margin-top:20px">
+<h4 style="font-size:1rem;margin-bottom:12px"><i class="fa-solid fa-database"></i> Backup</h4>
+<div style="display:flex;gap:10px;flex-wrap:wrap">
+<button onclick="exportarBackupJSON()" class="btn btn-outline" style="flex:1;min-width:140px"><i class="fa-solid fa-download"></i> Baixar JSON</button>
+<button onclick="document.getElementById('input-import-json').click()" class="btn btn-outline" style="flex:1;min-width:140px"><i class="fa-solid fa-upload"></i> Importar JSON</button>
+<input type="file" id="input-import-json" accept=".json" style="display:none" onchange="importarBackupJSON(event)">
+</div>
+</div>
+</div>
+<div id="tab2" class="tab-content">
+<div class="card" style="padding:14px">
+<h4 style="font-size:1rem;margin-bottom:12px;display:flex;align-items:center;gap:8px"><i class="fa-solid fa-th"></i> Visão Geral</h4>
+<div id="grade-boxes" class="grade-boxes"></div>
+<div class="grade-legenda">
+<div class="grade-legenda-item"><div class="grade-legenda-cor" style="background:#94a3b8"></div>Livre</div>
+<div class="grade-legenda-item"><div class="grade-legenda-cor" style="background:#f59e0b"></div>Andamento</div>
+<div class="grade-legenda-item"><div class="grade-legenda-cor" style="background:#10b981"></div>Pronto</div>
+<div class="grade-legenda-item"><div class="grade-legenda-cor" style="background:#1e40af"></div>Finalizado</div>
+</div>
+</div>
+<button onclick="enviarTodosPendentes()" class="btn btn-success" style="margin-bottom:15px;padding:14px;font-size:.95rem"><i class="fa-solid fa-paper-plane"></i> Enviar Todos Concluídos p/ Relatório</button>
+<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
+<button onclick="alternarVisibilidadeTodosOperacao(false)" class="btn-icon btn-olho" title="Ocultar Todos"><i class="fa-solid fa-eye-slash"></i></button>
+<button onclick="alternarVisibilidadeTodosOperacao(true)" class="btn-icon btn-olho" title="Mostrar Todos"><i class="fa-solid fa-eye"></i></button>
+</div>
+<div id="lista-boxes-tab2"></div>
+</div>
+<div id="tab3" class="tab-content">
+<div class="actions-grid">
+<button onclick="visualizarRelatorioCompleto()" class="btn btn-primary" style="grid-column:span 2;padding:16px;font-size:1rem"><i class="fa-solid fa-eye"></i> Visualizar Relatório</button>
+<button onclick="imprimirRelatorioDireto()" class="btn btn-outline" style="border-color:var(--success);color:var(--success)"><i class="fa-solid fa-print"></i> Imprimir</button>
+</div>
+<div class="actions-grid-3">
+<button id="btn-pdf" onclick="gerarPDFReal()" class="btn btn-outline" style="border-color:var(--primary);color:var(--primary)"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+<button onclick="compartilharRelatorio()" class="btn btn-share"><i class="fa-brands fa-whatsapp"></i> WhatsApp</button>
+<button onclick="salvarHistorico()" class="btn btn-outline" style="border-color:#f59e0b;color:#f59e0b"><i class="fa-solid fa-bookmark"></i> Histórico</button>
+</div>
+<button onclick="limparRelatorio()" class="btn btn-danger" style="margin-bottom:15px"><i class="fa-solid fa-trash"></i> Limpar Relatório</button>
+<div class="card" style="padding:18px">
+<h2 style="font-size:1.3rem;font-weight:800;text-align:center;margin-bottom:12px">Relatório de Cargas</h2>
+<p id="relatorio-data" style="font-size:.85rem;color:var(--text-secondary);text-align:center;margin-bottom:18px"></p>
+<div class="metrics-grid-3" style="margin-bottom:18px">
+<div class="metric-card"><span>Total Veículo</span><strong id="r3-total-placas">0</strong></div>
+<div class="metric-card"><span>Total Loja</span><strong id="r3-total-lojas">0</strong></div>
+<div class="metric-card"><span>Total Pallets</span><strong id="r3-total-pallets">0</strong></div>
+</div>
+<div id="lista-boxes-tab3" class="tabela-container"></div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="font-size:1.1rem;margin-bottom:14px;display:flex;align-items:center;gap:8px"><i class="fa-solid fa-clock-rotate-left"></i> Histórico <span class="contador-badge" id="contador-historico">0</span></h3>
+<div id="lista-historico"></div>
+</div>
+</div>
+<div id="tab4" class="tab-content">
+<div class="card card-colapsavel colapsado">
+<div class="card-titulo" onclick="toggleCard(this)"><h3 style="font-size:1.05rem"><i class="fa-solid fa-box"></i> Cadastro de Box <span class="contador-badge" id="contador-boxes">25</span></h3><i class="fa-solid fa-chevron-down chevron"></i></div>
+<div class="card-conteudo">
+<p style="font-size:.85rem;color:var(--text-secondary);margin:14px 0">Edite um box existente ou adicione um novo. Clique em um box abaixo para editar.</p>
+<form id="form-box" onsubmit="salvarBox(event)" style="margin-top:14px">
+<input type="hidden" id="box-id">
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+<div class="form-group"><label>Nº do Box *</label><input type="text" id="box-numero" class="form-control" placeholder="Ex: Box 07" required></div>
+<div class="form-group"><label>Placa Caminhão</label><input type="text" id="box-placa" class="form-control" placeholder="ABC-1234" onkeyup="atualizarCapacidadeFormTopo()"><span class="capacidade-placa" id="cap-placa-form-topo" style="display:none"></span></div>
+<div class="form-group"><label>Nº da Carga</label><input type="text" id="box-numero-carga" class="form-control" placeholder="Ex: 500"></div>
+</div>
+<div class="form-group"><label>Lojas (Separe por vírgula)</label><input type="text" id="box-lojas" class="form-control input-lojas-destaque" placeholder="10, 12, 101"></div>
+<div class="form-group"><label>Qtd Prevista Pallets/Partes</label><input type="text" id="box-pallets" class="form-control input-destaque-bg" placeholder="10, 15, 5"></div>
+<div class="form-group"><label>Carregador</label><select id="box-carregador" class="form-control input-destaque-bg"><option value="">-- Selecione --</option></select></div>
+<div style="display:flex;gap:10px">
+<button type="submit" class="btn btn-primary" style="flex:1"><i class="fa-solid fa-floppy-disk"></i> Salvar Box</button>
+<button type="button" onclick="limparFormBox()" class="btn btn-outline" style="flex:1"><i class="fa-solid fa-xmark"></i> Cancelar</button>
+</div>
+</form>
+<div style="margin-top:24px;border-top:1px solid var(--border);padding-top:18px">
+<h4 style="font-size:1rem;margin-bottom:12px"><i class="fa-solid fa-list"></i> Boxes Cadastrados (clique para editar)</h4>
+<div id="lista-boxes-config" class="lista-boxes-config"></div>
+</div>
+</div>
+</div>
+<div class="card card-colapsavel colapsado">
+<div class="card-titulo" onclick="toggleCard(this)"><h3 style="font-size:1.05rem"><i class="fa-solid fa-volume-high"></i> Sons</h3><i class="fa-solid fa-chevron-down chevron"></i></div>
+<div class="card-conteudo">
+<div class="som-item"><div class="som-item-info"><div class="som-item-icon">✅</div><div><div class="som-item-nome">Sucesso</div></div></div><div class="toggle-container"><button class="som-teste-btn" onclick="tocarSom('sucesso')"><i class="fa-solid fa-play"></i></button><label class="toggle-switch"><input type="checkbox" id="som-sucesso" checked onchange="salvarPreferenciaSom()"><span class="toggle-slider"></span></label></div></div>
+<div class="som-item"><div class="som-item-info"><div class="som-item-icon">⚠️</div><div><div class="som-item-nome">Erro</div></div></div><div class="toggle-container"><button class="som-teste-btn" onclick="tocarSom('erro')"><i class="fa-solid fa-play"></i></button><label class="toggle-switch"><input type="checkbox" id="som-erro" checked onchange="salvarPreferenciaSom()"><span class="toggle-slider"></span></label></div></div>
+<div class="som-item"><div class="som-item-info"><div class="som-item-icon">🔘</div><div><div class="som-item-nome">Clique</div></div></div><div class="toggle-container"><button class="som-teste-btn" onclick="tocarSom('clique')"><i class="fa-solid fa-play"></i></button><label class="toggle-switch"><input type="checkbox" id="som-clique" checked onchange="salvarPreferenciaSom()"><span class="toggle-slider"></span></label></div></div>
+</div>
+</div>
+<div class="card card-colapsavel colapsado">
+<div class="card-titulo" onclick="toggleCard(this)"><h3 style="font-size:1.05rem"><i class="fa-solid fa-truck"></i> Placas <span class="contador-badge" id="contador-placas">0</span></h3><i class="fa-solid fa-chevron-down chevron"></i></div>
+<div class="card-conteudo">
+<div class="form-group" style="margin-top:14px"><label>Cadastrar Placa</label><div style="display:flex;gap:10px"><input type="text" id="cad-placa" class="form-control" placeholder="ABC-1234"><select id="cad-tipo" class="form-control" style="width:150px"><option value="carreta">Carreta (28)</option><option value="bitruck">Bitruck (22)</option><option value="truck">Truck (16)</option><option value="caminhao14">Cam. (14)</option><option value="caminhao12">Cam. (12)</option></select><button onclick="cadastrarPlaca()" class="btn btn-success" style="width:auto"><i class="fa-solid fa-check"></i></button></div></div>
+<div id="lista-placas-cadastradas" style="margin-top:18px"></div>
+</div>
+</div>
+<div class="card card-colapsavel colapsado">
+<div class="card-titulo" onclick="toggleCard(this)"><h3 style="font-size:1.05rem"><i class="fa-solid fa-filter"></i> Regras <span class="contador-badge" id="contador-regras">0</span></h3><i class="fa-solid fa-chevron-down chevron"></i></div>
+<div class="card-conteudo">
+<div class="form-group"><label>Número da Loja</label><input type="text" id="regra-loja" class="form-control" placeholder="Ex: 8"></div>
+<div class="form-group"><label>Tipos Permitidos</label><div class="checkbox-group"><label><input type="checkbox" value="carreta"> Carreta</label><label><input type="checkbox" value="bitruck"> Bitruck</label><label><input type="checkbox" value="truck"> Truck</label><label><input type="checkbox" value="caminhao14"> Cam.14</label><label><input type="checkbox" value="caminhao12"> Cam.12</label><label><input type="checkbox" value="proibido"> Proibido</label></div></div>
+<button onclick="adicionarRegra()" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Adicionar</button>
+<div id="lista-regras" style="margin-top:18px"></div>
+</div>
+</div>
+<div class="card card-colapsavel colapsado">
+<div class="card-titulo" onclick="toggleCard(this)"><h3 style="font-size:1.05rem"><i class="fa-solid fa-user-plus"></i> Carregadores <span class="contador-badge" id="contador-carregadores-cad">0</span></h3><i class="fa-solid fa-chevron-down chevron"></i></div>
+<div class="card-conteudo">
+<div class="form-group"><label>Nome</label><div style="display:flex;gap:10px"><input type="text" id="cad-carregador" class="form-control" placeholder="Ex: João"><button onclick="cadastrarCarregador()" class="btn btn-success" style="width:auto"><i class="fa-solid fa-check"></i></button></div></div>
+<div id="lista-carregadores-cadastrados" style="margin-top:18px"></div>
+</div>
+</div>
+<div class="card card-colapsavel colapsado" style="border:2px dashed var(--warning-border);background:var(--warning-bg)">
+<div class="card-titulo" onclick="toggleCard(this)">
+<h3 style="font-size:1.05rem;color:var(--warning-text)"><i class="fa-solid fa-rotate-left"></i> Reset da Operação</h3>
+<i class="fa-solid fa-chevron-down chevron" style="color:var(--warning-text)"></i>
+</div>
+<div class="card-conteudo">
+<p style="font-size:.85rem;color:var(--text-secondary);margin-bottom:12px">Limpa todos os dados operacionais (placas, cargas, lojas, pallets, status) dos boxes, mas <strong>mantém os boxes cadastrados</strong> e as configurações.</p>
+<button onclick="resetarOperacao()" class="btn-emergencia-config"><i class="fa-solid fa-rotate-left"></i> RESETAR OPERAÇÃO</button>
+</div>
+</div>
+</div>
+</div>
+<button class="btn-consulta-flutuante" onclick="abrirModalConsulta()" title="Consulta"><i class="fa-solid fa-magnifying-glass"></i></button>
+<div id="modal-relatorio" class="modal-relatorio">
+<div class="modal-relatorio-conteudo">
+<button class="btn-voltar no-print" onclick="fecharModalRelatorio()" title="Voltar"><i class="fa-solid fa-arrow-left"></i></button>
+<div id="conteudo-relatorio"></div>
+<div class="modal-rodape no-print">
+<button onclick="imprimirRelatorioDireto()" class="btn btn-primary"><i class="fa-solid fa-print"></i> Imprimir</button>
+<button onclick="gerarPDFReal()" class="btn btn-outline" style="border-color:var(--primary);color:var(--primary)"><i class="fa-solid fa-file-pdf"></i> Baixar PDF</button>
+<button onclick="compartilharRelatorio()" class="btn btn-share"><i class="fa-brands fa-whatsapp"></i> WhatsApp</button>
+</div>
+</div>
+</div>
+<div id="modal-consulta" class="modal-consulta">
+<div class="modal-consulta-conteudo">
+<div class="modal-consulta-header"><h3>Consulta</h3><button class="btn-fechar-modal" onclick="fecharModalConsulta()"><i class="fa-solid fa-times"></i></button></div>
+<div class="modal-tabs">
+<button class="modal-tab-btn active" onclick="switchModalTab('tab-loja-caminhao',this)">Lojas x Caminhões</button>
+<button class="modal-tab-btn" onclick="switchModalTab('tab-regras',this)">Regras</button>
+<button class="modal-tab-btn" onclick="switchModalTab('tab-placas',this)">Placas</button>
+<button class="modal-tab-btn" onclick="switchModalTab('tab-carregadores',this)">Carregadores</button>
+</div>
+<div id="tab-loja-caminhao" class="modal-tab-content active">
+<div style="display:grid;gap:18px">
+<div>
+<label style="font-size:.85rem;font-weight:700;color:var(--text-secondary);display:block;margin-bottom:6px">🚛 Consultar Caminhão → Lojas</label>
+<select id="consulta-tipo-caminhao" class="form-control" onchange="consultarLojasPorCaminhao()">
+<option value="">Selecione o tipo...</option>
+<option value="carreta">Carreta (28)</option>
+<option value="bitruck">Bitruck (22)</option>
+<option value="truck">Truck (16)</option>
+<option value="caminhao14">Caminhão (14)</option>
+<option value="caminhao12">Caminhão (12)</option>
+</select>
+<div id="resultado-lojas-caminhao" style="margin-top:12px"></div>
+</div>
+<div style="border-top:1px solid var(--border);padding-top:18px">
+<label style="font-size:.85rem;font-weight:700;color:var(--text-secondary);display:block;margin-bottom:6px">🏪 Consultar Loja → Caminhões</label>
+<input type="text" id="consulta-loja-tipo" class="form-control" placeholder="Digite o nº da loja..." onkeyup="consultarCaminhoesPorLoja()">
+<div id="resultado-caminhoes-loja" style="margin-top:12px"></div>
+</div>
+</div>
+</div>
+<div id="tab-regras" class="modal-tab-content"><div class="form-group"><label>Loja</label><input type="text" id="consulta-regra-loja" class="form-control" placeholder="Ex: 8" onkeyup="consultarRegras()"></div><div id="resultado-regras"></div></div>
+<div id="tab-placas" class="modal-tab-content"><div class="form-group"><label>Placa</label><input type="text" id="consulta-placa" class="form-control" placeholder="Ex: ABC" onkeyup="consultarPlacas()"></div><div id="resultado-placas"></div></div>
+<div id="tab-carregadores" class="modal-tab-content"><div class="form-group"><label>Carregador</label><input type="text" id="consulta-carregador" class="form-control" placeholder="Ex: João (ou deixe em branco)" onkeyup="consultarCarregadores()"></div><div id="resultado-carregadores"></div></div>
+</div>
+</div>
+<script>
+var NUMEROS_BOXES=[7,8,9,10,11,12,13,15,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40];
+function escapeHTML(str){if(str===null||str===undefined)return'';return String(str).replace(/[&<>"']/g,function(m){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];});}
+function criarDadosIniciais(){var arr=[];for(var i=0;i<NUMEROS_BOXES.length;i++){var numBox=NUMEROS_BOXES[i];arr.push({id:i+1,numero:'Box '+numBox,numeroCarga:'',placa:'',carregador:'',lojas:'',palletsPrevistos:'0',palletsFinal:'0',selecionado:false,oculto:false,carregado:false,lancado:false,notasEntregues:false,prontoParaEnviar:false,finalizado:false});}return arr;}
+function safeGet(key,fallback){try{var item=localStorage.getItem(key);if(!item)return fallback;var parsed=JSON.parse(item);return parsed!==null?parsed:fallback;}catch(e){return fallback;}}
+function safeSet(key,value){try{localStorage.setItem(key,JSON.stringify(value));}catch(e){}}
+var dadosApp=safeGet('app_celula_db_v9',criarDadosIniciais());
+var regrasApp=safeGet('app_regras_db',[]);
+var placasApp=safeGet('app_placas_db',[]);
+var carregadoresApp=safeGet('app_carregadores_db',[]);
+var historicoApp=safeGet('app_historico_db',[]);
+var prefsSom=safeGet('app_prefs_som',{sucesso:true,erro:true,clique:true});
+if(!Array.isArray(dadosApp))dadosApp=criarDadosIniciais();
+if(!Array.isArray(regrasApp))regrasApp=[];
+if(!Array.isArray(placasApp))placasApp=[];
+if(!Array.isArray(carregadoresApp))carregadoresApp=[];
+if(!Array.isArray(historicoApp))historicoApp=[];
+for(var k=0;k<dadosApp.length;k++){var it=dadosApp[k];if(!it.numeroCarga)it.numeroCarga='';if(!it.placa)it.placa='';if(!it.carregador)it.carregador='';if(!it.lojas)it.lojas='';if(!it.palletsPrevistos)it.palletsPrevistos='0';if(!it.palletsFinal)it.palletsFinal='0';if(it.selecionado===undefined)it.selecionado=false;if(it.oculto===undefined)it.oculto=false;if(it.carregado===undefined)it.carregado=false;if(it.lancado===undefined)it.lancado=false;if(it.notasEntregues===undefined)it.notasEntregues=false;if(it.prontoParaEnviar===undefined)it.prontoParaEnviar=false;if(it.finalizado===undefined)it.finalizado=false;}
+function aplicarTema(t){document.documentElement.setAttribute('data-theme',t);var ic=document.getElementById('theme-icon');if(ic)ic.className=t==='dark'?'fa-solid fa-sun':'fa-solid fa-moon';localStorage.setItem('app_tema',t);}
+function alternarTema(){var a=document.documentElement.getAttribute('data-theme')||'light';aplicarTema(a==='light'?'dark':'light');}
+aplicarTema(localStorage.getItem('app_tema')||'light');
+function salvarStorage(){safeSet('app_celula_db_v9',dadosApp);safeSet('app_regras_db',regrasApp);safeSet('app_placas_db',placasApp);safeSet('app_carregadores_db',carregadoresApp);safeSet('app_historico_db',historicoApp);}
+var audioCtx=null;
+function getAudioCtx(){if(!audioCtx){try{audioCtx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}}return audioCtx;}
+function tocarNota(freq,inicio,duracao,tipo,volume){var ctx=getAudioCtx();if(!ctx)return;try{if(ctx.state==='suspended')ctx.resume();var osc=ctx.createOscillator();var gain=ctx.createGain();osc.connect(gain);gain.connect(ctx.destination);osc.type=tipo||'sine';osc.frequency.value=freq;var t=ctx.currentTime+inicio;gain.gain.setValueAtTime(0,t);gain.gain.linearRampToValueAtTime(volume||.3,t+.01);gain.gain.exponentialRampToValueAtTime(.01,t+duracao);osc.start(t);osc.stop(t+duracao);}catch(e){}}
+function tocarSom(tipo){if(tipo==='sucesso'&&!prefsSom.sucesso)return;if(tipo==='erro'&&!prefsSom.erro)return;if(tipo==='clique'&&!prefsSom.clique)return;if(tipo==='sucesso'){tocarNota(523.25,0,.15,'sine',.25);tocarNota(659.25,.1,.15,'sine',.25);tocarNota(783.99,.2,.25,'sine',.25);}else if(tipo==='erro'){tocarNota(200,0,.15,'square',.2);tocarNota(200,.2,.15,'square',.2);tocarNota(200,.4,.3,'square',.2);}else if(tipo==='clique'){tocarNota(880,0,.08,'sine',.15);}}
+function salvarPreferenciaSom(){prefsSom={sucesso:document.getElementById('som-sucesso').checked,erro:document.getElementById('som-erro').checked,clique:document.getElementById('som-clique').checked};safeSet('app_prefs_som',prefsSom);}
+function carregarPreferenciasSom(){var e1=document.getElementById('som-sucesso');var e2=document.getElementById('som-erro');var e3=document.getElementById('som-clique');if(e1)e1.checked=prefsSom.sucesso;if(e2)e2.checked=prefsSom.erro;if(e3)e3.checked=prefsSom.clique;}
+function contarLojas(s){if(!s)return 0;return s.toString().split(',').map(function(l){return l.trim();}).filter(function(l){return l.length>0;}).length;}
+function somarValoresSeparados(s){if(!s)return 0;return s.toString().split(',').map(function(v){return parseFloat(v.trim())||0;}).reduce(function(a,c){return a+c;},0);}
+function obterCapacidadePlaca(placa){if(!placa)return'';var p=null;for(var i=0;i<placasApp.length;i++){if(placasApp[i].placa.toUpperCase()===placa.toUpperCase().trim()){p=placasApp[i];break;}}if(!p)return'';var mapa={'carreta':'28 partes','bitruck':'22 partes','truck':'16 partes','caminhao14':'14 partes','caminhao12':'12 partes'};return mapa[p.tipo]||'';}
+function atualizarCapacidadeFormTopo(){var placa=document.getElementById('box-placa').value;var spanCap=document.getElementById('cap-placa-form-topo');var cap=obterCapacidadePlaca(placa);if(cap){spanCap.innerText=' '+cap;spanCap.style.display='inline-block';}else{spanCap.innerText='';spanCap.style.display='none';}}
+function verificarProblemas(item){var problemas=[];try{var placa=item.placa?item.placa.toUpperCase().trim():'';var lojas=item.lojas?item.lojas.split(',').map(function(l){return l.trim();}).filter(function(l){return l!=='';}):[];if(placa){var pc=null;for(var i=0;i<placasApp.length;i++){if(placasApp[i].placa===placa){pc=placasApp[i];break;}}if(!pc)problemas.push('Placa '+placa+' não cadastrada');}if(lojas.length>0&&placa){var pc2=null;for(var j=0;j<placasApp.length;j++){if(placasApp[j].placa===placa){pc2=placasApp[j];break;}}var tipoPlaca=pc2?pc2.tipo:null;for(var r=0;r<regrasApp.length;r++){var regra=regrasApp[r];if(lojas.indexOf(regra.loja)!==-1){if(regra.tipos.indexOf('proibido')!==-1){problemas.push('Loja '+regra.loja+' é PROIBIDA');}else if(tipoPlaca&&regra.tipos.indexOf(tipoPlaca)===-1){var mapa={'carreta':'Carreta','bitruck':'Bitruck','truck':'Truck','caminhao14':'Cam.14','caminhao12':'Cam.12'};problemas.push('Loja '+regra.loja+' não aceita '+(mapa[tipoPlaca]||tipoPlaca));}}}}}catch(e){console.error(e);}return problemas;}
+function boxTemDados(item){return item.selecionado||(item.placa&&item.placa.trim()!=='')||(item.lojas&&item.lojas.trim()!=='')||(item.numeroCarga&&item.numeroCarga.trim()!=='')||(item.carregador&&item.carregador.trim()!=='')||(item.palletsPrevistos&&item.palletsPrevistos!=='0');}
+function switchTab(id,btn){var tabs=document.querySelectorAll('.tab-content');for(var i=0;i<tabs.length;i++)tabs[i].classList.remove('active');var btns=document.querySelectorAll('.tab-btn');for(var j=0;j<btns.length;j++)btns[j].classList.remove('active');document.getElementById(id).classList.add('active');if(btn)btn.classList.add('active');document.getElementById('m-tab1').style.display=id==='tab1'?'grid':'none';document.getElementById('m-tab2').style.display=id==='tab2'?'grid':'none';render();}
+function toggleCard(elemento){elemento.parentElement.classList.toggle('colapsado');}
+function limparFormBox(){document.getElementById('form-box').reset();document.getElementById('box-id').value='';document.getElementById('cap-placa-form-topo').style.display='none';}
+function salvarBox(e){e.preventDefault();var id=document.getElementById('box-id').value;var num=document.getElementById('box-numero').value;var numCarga=document.getElementById('box-numero-carga').value;var pla=document.getElementById('box-placa').value.toUpperCase();var car=document.getElementById('box-carregador').value;var loj=document.getElementById('box-lojas').value;var pal=document.getElementById('box-pallets').value||"0";if(id){for(var i=0;i<dadosApp.length;i++){if(dadosApp[i].id==id){dadosApp[i].numero=num;dadosApp[i].numeroCarga=numCarga;dadosApp[i].placa=pla;dadosApp[i].carregador=car;dadosApp[i].lojas=loj;dadosApp[i].palletsPrevistos=pal;dadosApp[i].palletsFinal=pal;break;}}}else{dadosApp.push({id:Date.now(),numero:num,numeroCarga:numCarga,placa:pla,carregador:car,lojas:loj,palletsPrevistos:pal,palletsFinal:pal,selecionado:false,oculto:false,carregado:false,lancado:false,notasEntregues:false,prontoParaEnviar:false,finalizado:false});}limparFormBox();salvarStorage();tocarSom('sucesso');render();}
+function editarBox(id){var item=null;for(var i=0;i<dadosApp.length;i++){if(dadosApp[i].id==id){item=dadosApp[i];break;}}if(!item)return;document.getElementById('box-id').value=item.id;document.getElementById('box-numero').value=item.numero;document.getElementById('box-placa').value=item.placa;document.getElementById('box-numero-carga').value=item.numeroCarga;document.getElementById('box-carregador').value=item.carregador;document.getElementById('box-lojas').value=item.lojas;document.getElementById('box-pallets').value=item.palletsPrevistos;atualizarCapacidadeFormTopo();document.getElementById('form-box').scrollIntoView({behavior:'smooth',block:'start'});tocarSom('clique');}
+function excluirBoxConfig(id){if(!confirm('Remover este box?'))return;var novo=[];for(var i=0;i<dadosApp.length;i++){if(dadosApp[i].id!=id)novo.push(dadosApp[i]);}dadosApp=novo;salvarStorage();tocarSom('erro');render();}
+function toggleSelecao(id){for(var i=0;i<dadosApp.length;i++){if(dadosApp[i].id==id){dadosApp[i].selecionado=!dadosApp[i].selecionado;break;}}salvarStorage();tocarSom('clique');render();}
+function toggleOcultarBox(id){for(var i=0;i<dadosApp.length;i++){if(dadosApp[i].id==id){dadosApp[i].oculto=!dadosApp[i].oculto;break;}}salvarStorage();tocarSom('clique');render();}
+function alternarVisibilidadeTodos(v){for(var i=0;i<dadosApp.length;i++)dadosApp[i].oculto=!v;salvarStorage();tocarSom('clique');render();}
+function alternarSelecaoTodos(v){for(var i=0;i<dadosApp.length;i++)dadosApp[i].selecionado=v;salvarStorage();tocarSom('clique');render();}
+function alternarVisibilidadeTodosOperacao(v){for(var i=0;i<dadosApp.length;i++){if(dadosApp[i].selecionado)dadosApp[i].oculto=!v;}salvarStorage();tocarSom('clique');render();}
+function excluirBox(id){if(confirm("Remover este box?")){var novo=[];for(var i=0;i<dadosApp.length;i++){if(dadosApp[i].id!=id)novo.push(dadosApp[i]);}dadosApp=novo;salvarStorage();tocarSom('erro');render();}}
+function updateCampoBox(id,campo,valor){for(var i=0;i<dadosApp.length;i++){if(dadosApp[i].id==id){if(campo==='placa')dadosApp[i][campo]=valor.toUpperCase();else dadosApp[i][campo]=valor;if(campo==='palletsFinal')dadosApp[i].palletsPrevistos=valor;else if(campo==='palletsPrevistos')dadosApp[i].palletsFinal=valor;break;}}salvarStorage();renderTotalizadores();var totalSpan=document.getElementById('total-pallets-'+id);if(totalSpan){for(var j=0;j<dadosApp.length;j++){if(dadosApp[j].id==id){totalSpan.innerText='(Total: '+somarValoresSeparados(dadosApp[j].palletsPrevistos)+')';break;}}}}
+function salvarCardIndividual(id, btnElement) {
+    salvarStorage();
+    tocarSom('sucesso');
+    var originalHTML = btnElement.innerHTML;
+    btnElement.innerHTML = '<i class="fa-solid fa-check"></i> Salvo!';
+    btnElement.style.background = 'var(--success)';
+    btnElement.style.color = '#fff';
+    setTimeout(function() {
+        btnElement.innerHTML = originalHTML;
+        btnElement.style.background = '';
+        btnElement.style.color = '';
+    }, 1500);
+}
+function toggleStatus(id,campo){for(var i=0;i<dadosApp.length;i++){if(dadosApp[i].id==id){dadosApp[i][campo]=!dadosApp[i][campo];dadosApp[i].prontoParaEnviar=(dadosApp[i].carregado&&dadosApp[i].lancado&&dadosApp[i].notasEntregues);break;}}salvarStorage();tocarSom('clique');render();}
+function reabrirCard(id){for(var i=0;i<dadosApp.length;i++){if(dadosApp[i].id==id){dadosApp[i].prontoParaEnviar=false;break;}}salvarStorage();render();}
+function finalizarBoxIndividual(id){for(var i=0;i<dadosApp.length;i++){if(dadosApp[i].id==id){dadosApp[i].finalizado=true;dadosApp[i].prontoParaEnviar=false;break;}}salvarStorage();tocarSom('sucesso');render();}
+function enviarTodosPendentes(){var p=[];for(var i=0;i<dadosApp.length;i++){if(dadosApp[i].selecionado&&dadosApp[i].prontoParaEnviar&&!dadosApp[i].finalizado)p.push(dadosApp[i]);}if(p.length===0){tocarSom('erro');alert('Nenhum box pronto. Complete os 3 status.');return;}if(confirm('Enviar '+p.length+' box(es) para o relatório?')){for(var j=0;j<p.length;j++)p[j].finalizado=true;salvarStorage();tocarSom('sucesso');render();}}
+function resetarOperacao(){if(!confirm('⚠️ RESETAR OPERAÇÃO\n\nIsso vai:\n✅ MANTER os boxes com os nomes corretos\n✅ MANTER as configurações (placas, regras, carregadores)\n❌ LIMPAR placas, cargas, lojas, pallets e status de todos os boxes\n\nContinuar?'))return;for(var i=0;i<dadosApp.length;i++){dadosApp[i].placa='';dadosApp[i].numeroCarga='';dadosApp[i].carregador='';dadosApp[i].lojas='';dadosApp[i].palletsPrevistos='0';dadosApp[i].palletsFinal='0';dadosApp[i].carregado=false;dadosApp[i].lancado=false;dadosApp[i].notasEntregues=false;dadosApp[i].prontoParaEnviar=false;dadosApp[i].finalizado=false;dadosApp[i].oculto=false;}salvarStorage();tocarSom('sucesso');render();alert('✅ Operação resetada!');}
+function limparRelatorio(){if(confirm("Limpar todos os dados do relatório?")){for(var i=0;i<dadosApp.length;i++){if(dadosApp[i].finalizado){dadosApp[i].finalizado=false;dadosApp[i].prontoParaEnviar=false;dadosApp[i].carregado=false;dadosApp[i].lancado=false;dadosApp[i].notasEntregues=false;}}salvarStorage();tocarSom('sucesso');render();}}
+function limparInformacoes(){if(confirm("Limpar dados operacionais?")){for(var i=0;i<dadosApp.length;i++){dadosApp[i].placa='';dadosApp[i].numeroCarga='';dadosApp[i].carregador='';dadosApp[i].lojas='';dadosApp[i].palletsPrevistos="0";dadosApp[i].palletsFinal="0";dadosApp[i].carregado=false;dadosApp[i].lancado=false;dadosApp[i].notasEntregues=false;dadosApp[i].prontoParaEnviar=false;dadosApp[i].finalizado=false;}salvarStorage();tocarSom('erro');render();}}
+function exportarBackupJSON(){var d="data:text/json;charset=utf-8,"+encodeURIComponent(JSON.stringify(dadosApp,null,2));var a=document.createElement('a');a.href=d;a.download='backup_'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();tocarSom('sucesso');}
+function importarBackupJSON(ev){var r=new FileReader();r.onload=function(e){try{var d=JSON.parse(e.target.result);if(Array.isArray(d)){dadosApp=d;salvarStorage();tocarSom('sucesso');render();}}catch(err){alert('Erro ao ler arquivo');}};if(ev.target.files[0])r.readAsText(ev.target.files[0]);}
+function visualizarRelatorioCompleto(){var fi=[];for(var i=0;i<dadosApp.length;i++){if(dadosApp[i].finalizado)fi.push(dadosApp[i]);}if(fi.length===0){tocarSom('erro');alert('Nenhuma carga finalizada. Vá na Aba 2 e envie os boxes concluídos.');return;}var totalPlacas=0,totalLojas=0,totalPallets=0;for(var j=0;j<fi.length;j++){if(fi[j].placa)totalPlacas++;totalLojas+=contarLojas(fi[j].lojas);totalPallets+=somarValoresSeparados(fi[j].palletsFinal);}var dataHora=new Date().toLocaleString('pt-BR');var html='<div class="modal-relatorio-header"><h2><i class="fa-solid fa-file-invoice"></i> Relatório de Cargas Concluídas</h2><p>Gerado em: '+escapeHTML(dataHora)+'</p></div><div style="padding:24px"><div class="modal-totais"><div class="modal-totais-card"><span>Total Veículos</span><strong>'+totalPlacas+'</strong></div><div class="modal-totais-card"><span>Total Lojas</span><strong>'+totalLojas+'</strong></div><div class="modal-totais-card"><span>Total Pallets</span><strong>'+totalPallets+'</strong></div></div><table class="modal-tabela"><thead><tr><th class="col-box">BOX</th><th class="col-carga">CARGA</th><th class="col-placa">PLACA</th><th class="col-lojas">LOJAS</th><th class="col-pallets">PLT</th></tr></thead><tbody>';for(var k=0;k<fi.length;k++){var item=fi[k];html+='<tr><td class="col-box">'+escapeHTML(item.numero.replace('Box ',''))+'</td><td class="col-carga">'+escapeHTML(item.numeroCarga||'-')+'</td><td class="col-placa">'+escapeHTML(item.placa||'-')+'</td><td class="col-lojas">'+escapeHTML(item.lojas||'-')+'</td><td class="col-pallets">'+somarValoresSeparados(item.palletsFinal)+'</td></tr>';}html+='</tbody></table></div>';document.getElementById('conteudo-relatorio').innerHTML=html;document.getElementById('modal-relatorio').classList.add('active');tocarSom('sucesso');}
+function fecharModalRelatorio(){document.getElementById('modal-relatorio').classList.remove('active');}
+function imprimirRelatorioDireto(){var fi=[];for(var i=0;i<dadosApp.length;i++){if(dadosApp[i].finalizado)fi.push(dadosApp[i]);}if(fi.length===0){tocarSom('erro');alert('Nenhuma carga finalizada');return;}if(!document.getElementById('modal-relatorio').classList.contains('active')){visualizarRelatorioCompleto();}setTimeout(function(){window.print();tocarSom('sucesso');},300);}
+function gerarPDFReal(){var fi=[];for(var i=0;i<dadosApp.length;i++){if(dadosApp[i].finalizado)fi.push(dadosApp[i]);}if(fi.length===0){alert('Nenhuma carga finalizada');return;}try{var jsPDF=window.jspdf.jsPDF;var doc=new jsPDF();var pageWidth=doc.internal.pageSize.getWidth();doc.setFontSize(16);doc.setFont('helvetica','bold');doc.text('Relatório de Cargas Concluídas',pageWidth/2,20,{align:'center'});doc.setFontSize(9);doc.setFont('helvetica','normal');doc.text('Gerado em: '+new Date().toLocaleString('pt-BR'),pageWidth/2,28,{align:'center'});var totalPlacas=0,totalLojas=0,totalPallets=0;for(var j=0;j<fi.length;j++){if(fi[j].placa)totalPlacas++;totalLojas+=contarLojas(fi[j].lojas);totalPallets+=somarValoresSeparados(fi[j].palletsFinal);}doc.setDrawColor(200);doc.rect(14,33,55,15);doc.rect(73,33,55,15);doc.rect(132,33,55,15);doc.setFontSize(7);doc.setTextColor(100);doc.text('TOTAL VEÍCULOS',41.5,39,{align:'center'});doc.text('TOTAL LOJAS',100.5,39,{align:'center'});doc.text('TOTAL PALLETS',159.5,39,{align:'center'});doc.setFontSize(14);doc.setFont('helvetica','bold');doc.setTextColor(37,99,235);doc.text(String(totalPlacas),41.5,45,{align:'center'});doc.text(String(totalLojas),100.5,45,{align:'center'});doc.text(String(totalPallets),159.5,45,{align:'center'});doc.setTextColor(0);var td=[];for(var k=0;k<fi.length;k++){td.push([fi[k].numero.replace('Box ',''),fi[k].numeroCarga||'-',fi[k].placa||'-',fi[k].lojas||'-',String(somarValoresSeparados(fi[k].palletsFinal))]);}doc.autoTable({startY:55,head:[['BOX','CARGA','PLACA','LOJAS','PLT']],body:td,theme:'grid',headStyles:{fillColor:[30,41,59],textColor:255,fontStyle:'bold',fontSize:8,halign:'center'},bodyStyles:{fontSize:8},columnStyles:{0:{cellWidth:18,halign:'center',fontStyle:'bold'},1:{cellWidth:30,halign:'left',font:'courier'},2:{cellWidth:35,halign:'left',font:'courier',fontStyle:'bold'},3:{cellWidth:60,halign:'right',fontStyle:'bold'},4:{cellWidth:20,halign:'right',fontStyle:'bold'}},margin:{left:14,right:14}});doc.save('Relatorio_'+new Date().toLocaleDateString('pt-BR').replace(/\//g,'-')+'.pdf');tocarSom('sucesso');}catch(e){alert('Erro ao gerar PDF: '+e.message);}}
+function salvarHistorico(){var fi=[];for(var i=0;i<dadosApp.length;i++){if(dadosApp[i].finalizado)fi.push(dadosApp[i]);}if(fi.length===0){alert('Nenhuma carga finalizada');return;}if(!confirm('Salvar '+fi.length+' cargas no histórico?'))return;var tp=0,tl=0,tpa=0;for(var j=0;j<fi.length;j++){if(fi[j].placa)tp++;tl+=contarLojas(fi[j].lojas);tpa+=somarValoresSeparados(fi[j].palletsFinal);}historicoApp.unshift({id:Date.now(),dataFormatada:new Date().toLocaleString('pt-BR'),totalPlacas:tp,totalLojas:tl,totalPallets:tpa,cargas:fi.map(function(i){return{numero:i.numero,numeroCarga:i.numeroCarga,placa:i.placa,carregador:i.carregador,lojas:i.lojas,palletsFinal:i.palletsFinal};})});salvarStorage();renderHistorico();tocarSom('sucesso');}
+function renderHistorico(){var div=document.getElementById('lista-historico');var contador=document.getElementById('contador-historico');if(!div||!contador)return;contador.innerText=historicoApp.length;if(historicoApp.length===0){div.innerHTML='<p style="text-align:center;color:var(--text-secondary);padding:10px">Nenhum histórico.</p>';return;}var html='';for(var i=0;i<historicoApp.length;i++){var h=historicoApp[i];html+='<div class="card-historico"><div class="card-historico-header"><span class="card-historico-data"><i class="fa-solid fa-calendar"></i> '+escapeHTML(h.dataFormatada)+'</span><div style="display:flex;gap:6px"><button onclick="verHistorico('+i+')" class="btn-icon"><i class="fa-solid fa-eye"></i></button><button onclick="excluirHistorico('+i+')" class="btn-icon btn-excluir"><i class="fa-solid fa-trash"></i></button></div></div><div class="card-historico-stats"><div><strong>'+h.totalPlacas+'</strong>Veículos</div><div><strong>'+h.totalLojas+'</strong>Lojas</div><div><strong>'+h.totalPallets+'</strong>Pallets</div></div></div>';}div.innerHTML=html;}
+function verHistorico(index){var h=historicoApp[index];if(!h)return;var m='📋 '+h.dataFormatada+'\n\n🚛 Veículos: '+h.totalPlacas+'\n🏪 Lojas: '+h.totalLojas+'\n📦 Pallets: '+h.totalPallets+'\n\nCARGAS:\n';for(var i=0;i<h.cargas.length;i++){var c=h.cargas[i];m+='\n• '+c.numero+' | Carga: '+(c.numeroCarga||'-')+'\n  Placa: '+(c.placa||'-')+'\n  Lojas: '+(c.lojas||'-')+'\n  Pallets: '+(c.palletsFinal||'0')+'\n';}alert(m);}
+function excluirHistorico(index){if(!confirm("Excluir?"))return;historicoApp.splice(index,1);salvarStorage();renderHistorico();}
+function compartilharRelatorio(){var f=[];for(var i=0;i<dadosApp.length;i++){if(dadosApp[i].finalizado)f.push(dadosApp[i]);}if(f.length===0){alert('Nenhuma carga finalizada');return;}var m="*RELATÓRIO DE CARGAS CONCLUÍDAS*\n\n";var tp=0,tl=0,tpa=0;for(var j=0;j<f.length;j++){if(f[j].placa)tp++;tl+=contarLojas(f[j].lojas);tpa+=somarValoresSeparados(f[j].palletsFinal);}m+='🚛 *Veículos:* '+tp+'\n🏪 *Lojas:* '+tl+'\n📦 *Pallets:* '+tpa+'\n\n';for(var k=0;k<f.length;k++){m+='*'+f[k].numero+'*\n🚛 Carga: '+(f[k].numeroCarga||'-')+' | Placa: '+(f[k].placa||'-')+'\n🏪 Lojas: '+(f[k].lojas||'-')+'\n📦 Pallets: '+somarValoresSeparados(f[k].palletsFinal)+'\n\n';}window.open('https://api.whatsapp.com/send?text='+encodeURIComponent(m),'_blank');}
+function adicionarRegra(){var loja=document.getElementById('regra-loja').value.trim();var checkboxes=document.querySelectorAll('.checkbox-group input[type="checkbox"]:checked');var tipos=[];for(var i=0;i<checkboxes.length;i++)tipos.push(checkboxes[i].value);if(loja&&tipos.length>0){var novo=[];for(var j=0;j<regrasApp.length;j++){if(regrasApp[j].loja!==loja)novo.push(regrasApp[j]);}novo.push({loja:loja,tipos:tipos});regrasApp=novo;salvarStorage();renderTab4();tocarSom('sucesso');document.getElementById('regra-loja').value='';for(var k=0;k<checkboxes.length;k++)checkboxes[k].checked=false;}else{alert('Preencha loja e selecione tipos');}}
+function cadastrarPlaca(){var placa=document.getElementById('cad-placa').value.toUpperCase().trim();var tipo=document.getElementById('cad-tipo').value;if(placa){var novo=[];for(var i=0;i<placasApp.length;i++){if(placasApp[i].placa!==placa)novo.push(placasApp[i]);}novo.push({placa:placa,tipo:tipo});placasApp=novo;salvarStorage();renderTab4();render();tocarSom('sucesso');document.getElementById('cad-placa').value='';}}
+function removerRegra(index){regrasApp.splice(index,1);salvarStorage();renderTab4();}
+function removerPlaca(index){if(confirm('Excluir placa?')){placasApp.splice(index,1);salvarStorage();renderTab4();render();}}
+function cadastrarCarregador(){var nome=document.getElementById('cad-carregador').value.trim();if(nome){if(carregadoresApp.indexOf(nome)===-1){carregadoresApp.push(nome);salvarStorage();renderTab4();render();tocarSom('sucesso');}else{alert('Já cadastrado');}document.getElementById('cad-carregador').value='';}}
+function removerCarregador(index){if(confirm('Excluir?')){carregadoresApp.splice(index,1);salvarStorage();renderTab4();render();}}
+function renderTab4(){document.getElementById('contador-boxes').innerText=dadosApp.length;document.getElementById('contador-placas').innerText=placasApp.length;document.getElementById('contador-regras').innerText=regrasApp.length;document.getElementById('contador-carregadores-cad').innerText=carregadoresApp.length;var divBoxes=document.getElementById('lista-boxes-config');if(divBoxes){var htmlBoxes='';for(var b=0;b<dadosApp.length;b++){var box=dadosApp[b];var temDados=boxTemDados(box);var cor=temDados?'var(--card-destaque-bg)':'var(--bg)';var borda=temDados?'var(--card-destaque-border)':'var(--border)';htmlBoxes+='<div class="box-config-item" style="background:'+cor+';border:1.5px solid '+borda+'" onclick="editarBox('+box.id+')">';htmlBoxes+='<div style="font-weight:800;color:var(--primary)">'+escapeHTML(box.numero)+'</div>';if(box.placa)htmlBoxes+='<div style="font-size:.7rem;color:var(--text-secondary);margin-top:4px">'+escapeHTML(box.placa)+'</div>';if(box.lojas)htmlBoxes+='<div style="font-size:.65rem;color:var(--text-secondary);margin-top:4px">🏪 '+escapeHTML(box.lojas)+'</div>';htmlBoxes+='<button onclick="event.stopPropagation();excluirBoxConfig('+box.id+')" style="margin-top:6px;background:none;border:none;color:var(--danger);cursor:pointer;font-size:.8rem"><i class="fa-solid fa-trash"></i></button>';htmlBoxes+='</div>';}divBoxes.innerHTML=htmlBoxes||'<p style="font-size:.85rem;color:var(--text-secondary)">Nenhum box cadastrado.</p>';}var divPlacas=document.getElementById('lista-placas-cadastradas');var hp='';for(var i=0;i<placasApp.length;i++){hp+='<div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:var(--bg);border-radius:8px;margin-bottom:8px"><span><strong>'+escapeHTML(placasApp[i].placa)+'</strong> ('+escapeHTML(placasApp[i].tipo)+')</span><button onclick="removerPlaca('+i+')" style="background:none;border:none;color:var(--danger);cursor:pointer;padding:6px"><i class="fa-solid fa-trash"></i></button></div>';}divPlacas.innerHTML=hp||'<p style="font-size:.85rem;color:var(--text-secondary)">Nenhuma placa.</p>';var divRegras=document.getElementById('lista-regras');var mapa={'carreta':'Carreta','bitruck':'Bitruck','truck':'Truck','caminhao14':'Cam.14','caminhao12':'Cam.12','proibido':'Proibido'};var hr='';for(var j=0;j<regrasApp.length;j++){var ts='';for(var t=0;t<regrasApp[j].tipos.length;t++){ts+=(mapa[regrasApp[j].tipos[t]]||regrasApp[j].tipos[t])+', ';}hr+='<div style="padding:12px;background:var(--bg);border-radius:8px;margin-bottom:10px"><div style="display:flex;justify-content:space-between;margin-bottom:8px"><strong style="color:var(--primary)">Loja '+escapeHTML(regrasApp[j].loja)+'</strong><button onclick="removerRegra('+j+')" style="background:none;border:none;color:var(--danger);padding:6px"><i class="fa-solid fa-trash"></i></button></div><div style="font-size:.85rem;color:var(--text-secondary)">Aceita: <strong>'+ts+'</strong></div></div>';}divRegras.innerHTML=hr||'<p style="font-size:.85rem;color:var(--text-secondary)">Nenhuma regra.</p>';var divCarreg=document.getElementById('lista-carregadores-cadastrados');var hc='';for(var k=0;k<carregadoresApp.length;k++){hc+='<div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:var(--bg);border-radius:8px;margin-bottom:8px"><span><i class="fa-solid fa-user" style="color:var(--primary);margin-right:8px"></i><strong>'+escapeHTML(carregadoresApp[k])+'</strong></span><button onclick="removerCarregador('+k+')" style="background:none;border:none;color:var(--danger);cursor:pointer;padding:6px"><i class="fa-solid fa-trash"></i></button></div>';}divCarreg.innerHTML=hc||'<p style="font-size:.85rem;color:var(--text-secondary)">Nenhum carregador.</p>';}
+function switchModalTab(tabId,btn){
+    var tabs=document.querySelectorAll('.modal-tab-content');
+    for(var i=0;i<tabs.length;i++)tabs[i].classList.remove('active');
+    var btns=document.querySelectorAll('.modal-tab-btn');
+    for(var j=0;j<btns.length;j++)btns[j].classList.remove('active');
+    document.getElementById(tabId).classList.add('active');
+    if(btn)btn.classList.add('active');
+    tocarSom('clique');
+    
+    // Auto-consultar ao abrir a aba para mostrar os dados imediatamente
+    if(tabId === 'tab-carregadores') consultarCarregadores();
+    if(tabId === 'tab-placas') consultarPlacas();
+    if(tabId === 'tab-regras') consultarRegras();
+}
+function abrirModalConsulta(){document.getElementById('modal-consulta').classList.add('active');}
+function fecharModalConsulta(){document.getElementById('modal-consulta').classList.remove('active');}
+function consultarLojasPorCaminhao(){var tipo=document.getElementById('consulta-tipo-caminhao').value;var div=document.getElementById('resultado-lojas-caminhao');if(!tipo){div.innerHTML='';return;}var permitidas=[];var restritas=[];var proibidas=[];if(regrasApp.length===0){div.innerHTML='<p style="font-size:.85rem;color:var(--text-secondary)">Nenhuma regra cadastrada.</p>';return;}for(var i=0;i<regrasApp.length;i++){var regra=regrasApp[i];if(regra.tipos.indexOf('proibido')!==-1){proibidas.push(regra.loja);}else if(regra.tipos.indexOf(tipo)!==-1){permitidas.push(regra.loja);}else{restritas.push(regra.loja);}}var html='';if(permitidas.length>0){html+='<div style="margin-bottom:10px"><span style="font-size:.8rem;font-weight:700;color:var(--success)">✅ Permitidas:</span> <span style="font-size:.85rem">'+permitidas.join(', ')+'</span></div>';}if(restritas.length>0){html+='<div style="margin-bottom:10px"><span style="font-size:.8rem;font-weight:700;color:var(--warning-text)">⚠️ Restritas:</span> <span style="font-size:.85rem">'+restritas.join(', ')+'</span></div>';}if(proibidas.length>0){html+='<div><span style="font-size:.8rem;font-weight:700;color:var(--danger)">❌ Proibidas:</span> <span style="font-size:.85rem">'+proibidas.join(', ')+'</span></div>';}div.innerHTML=html||'<p style="font-size:.85rem">Nenhuma loja encontrada.</p>';}
+function consultarCaminhoesPorLoja(){var loja=document.getElementById('consulta-loja-tipo').value.trim();var div=document.getElementById('resultado-caminhoes-loja');if(!loja){div.innerHTML='';return;}var regra=null;for(var i=0;i<regrasApp.length;i++){if(regrasApp[i].loja===loja){regra=regrasApp[i];break;}}var mapa={'carreta':'Carreta (28)','bitruck':'Bitruck (22)','truck':'Truck (16)','caminhao14':'Caminhão (14)','caminhao12':'Caminhão (12)','proibido':'PROIBIDO'};if(!regra){div.innerHTML='<p style="font-size:.85rem;color:var(--success)">✅ Sem restrições - qualquer caminhão pode atender</p>';return;}var html='<div style="display:flex;flex-wrap:wrap;gap:8px">';for(var t=0;t<regra.tipos.length;t++){var tipo=regra.tipos[t];var cor=tipo==='proibido'?'var(--danger)':'var(--primary)';html+='<span style="background:'+cor+';color:white;padding:6px 10px;border-radius:6px;font-size:.8rem;font-weight:700">'+escapeHTML(mapa[tipo]||tipo)+'</span>';}html+='</div>';div.innerHTML=html;}
+function consultarRegras(){var loja=document.getElementById('consulta-regra-loja').value.trim();var div=document.getElementById('resultado-regras');if(!loja){div.innerHTML='';return;}var regra=null;for(var i=0;i<regrasApp.length;i++){if(regrasApp[i].loja===loja){regra=regrasApp[i];break;}}if(regra){var mapa={'carreta':'Carreta','bitruck':'Bitruck','truck':'Truck','caminhao14':'Cam.14','caminhao12':'Cam.12','proibido':'Proibido'};var ts='';for(var t=0;t<regra.tipos.length;t++){ts+=(mapa[regra.tipos[t]]||regra.tipos[t])+', ';}div.innerHTML='<div style="padding:14px;background:var(--bg);border-radius:10px"><h4 style="color:var(--primary);margin-bottom:6px">Loja '+escapeHTML(loja)+':</h4><p>'+ts+'</p></div>';}else{div.innerHTML='<div style="padding:14px;background:var(--warning-bg);border-radius:10px"><p>Sem regras</p></div>';}}
+function consultarPlacas(){var termo=document.getElementById('consulta-placa').value.trim().toUpperCase();var div=document.getElementById('resultado-placas');if(!termo){div.innerHTML='';return;}var enc=[];for(var i=0;i<placasApp.length;i++){if(placasApp[i].placa.indexOf(termo)!==-1)enc.push(placasApp[i]);}if(enc.length>0){var mapa={'carreta':'Carreta (28)','bitruck':'Bitruck (22)','truck':'Truck (16)','caminhao14':'Cam. (14)','caminhao12':'Cam. (12)'};var html='';for(var j=0;j<enc.length;j++){html+='<div style="padding:10px;background:var(--card-bg);border-radius:8px;margin-bottom:8px"><strong style="color:var(--primary)">'+escapeHTML(enc[j].placa)+'</strong> - '+escapeHTML(mapa[enc[j].tipo]||enc[j].tipo)+'</div>';}div.innerHTML=html;}else{div.innerHTML='<p>Nenhuma placa</p>';}}
+function consultarCarregadores(){
+    var termo = document.getElementById('consulta-carregador').value.trim().toLowerCase();
+    var div = document.getElementById('resultado-carregadores');
+    var stats = {};
+    
+    // 1. Inicializa os carregadores cadastrados que correspondem à busca
+    for(var i = 0; i < carregadoresApp.length; i++){
+        var nome = carregadoresApp[i];
+        if(termo === '' || nome.toLowerCase().indexOf(termo) !== -1){
+            stats[nome] = {cargas: 0, pallets: 0, lojas: 0, tiposCaminhao: {}};
+        }
+    }
+    
+    // 2. Varre TODOS os boxes que tenham carregador e placa (finalizados ou não)
+    for(var j = 0; j < dadosApp.length; j++){
+        var item = dadosApp[j];
+        if(item.carregador && item.placa && item.placa.trim() !== ''){
+            var nomeCarregador = item.carregador;
+            
+            if(termo !== '' && nomeCarregador.toLowerCase().indexOf(termo) === -1) continue;
+            
+            if(!stats[nomeCarregador]){
+                stats[nomeCarregador] = {cargas: 0, pallets: 0, lojas: 0, tiposCaminhao: {}};
+            }
+            
+            stats[nomeCarregador].cargas += 1;
+            stats[nomeCarregador].pallets += somarValoresSeparados(item.palletsFinal || item.palletsPrevistos || '0');
+            stats[nomeCarregador].lojas += contarLojas(item.lojas);
+            
+            var tipoTruck = "Desconhecido";
+            var placaLimpa = item.placa.toUpperCase().trim();
+            for(var p = 0; p < placasApp.length; p++){
+                if(placasApp[p].placa === placaLimpa){
+                    tipoTruck = placasApp[p].tipo;
+                    break;
+                }
+            }
+            
+            if(!stats[nomeCarregador].tiposCaminhao[tipoTruck]){
+                stats[nomeCarregador].tiposCaminhao[tipoTruck] = 0;
+            }
+            stats[nomeCarregador].tiposCaminhao[tipoTruck] += 1;
+        }
+    }
+    
+    var html = '';
+    var nomes = Object.keys(stats).sort();
+    var mapaTipos = {
+        'carreta': 'Carreta (28)',
+        'bitruck': 'Bitruck (22)',
+        'truck': 'Truck (16)',
+        'caminhao14': 'Caminhão (14)',
+        'caminhao12': 'Caminhão (12)',
+        'Desconhecido': 'Não Identificado'
+    };
+    var coresTipos = {
+        'carreta': '#2563eb',
+        'bitruck': '#7c3aed',
+        'truck': '#059669',
+        'caminhao14': '#d97706',
+        'caminhao12': '#dc2626',
+        'Desconhecido': '#64748b'
+    };
+
+    if(nomes.length > 0){
+        for(var k = 0; k < nomes.length; k++){
+            var nome = nomes[k];
+            var s = stats[nome];
+            
+            html += '<div style="padding:16px; background:var(--card-bg); border-radius:12px; margin-bottom:12px; border:1px solid var(--border); border-left:5px solid var(--primary);">';
+            html += '<div style="font-weight:800; color:var(--primary); font-size:1.1rem; margin-bottom:10px; display:flex; align-items:center; gap:8px;">';
+            html += '<i class="fa-solid fa-user-gear"></i> ' + escapeHTML(nome) + '</div>';
+            
+            html += '<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:8px; font-size:0.85rem; margin-bottom:12px;">';
+            html += '<div style="text-align:center; background:var(--bg); padding:10px 6px; border-radius:8px;"><strong style="display:block; font-size:1.3rem; color:var(--text);">' + s.cargas + '</strong><span style="color:var(--text-secondary); font-size:0.7rem; font-weight:600; text-transform:uppercase;">Cargas</span></div>';
+            html += '<div style="text-align:center; background:var(--bg); padding:10px 6px; border-radius:8px;"><strong style="display:block; font-size:1.3rem; color:var(--text);">' + s.pallets + '</strong><span style="color:var(--text-secondary); font-size:0.7rem; font-weight:600; text-transform:uppercase;">Pallets</span></div>';
+            html += '<div style="text-align:center; background:var(--bg); padding:10px 6px; border-radius:8px;"><strong style="display:block; font-size:1.3rem; color:var(--text);">' + s.lojas + '</strong><span style="color:var(--text-secondary); font-size:0.7rem; font-weight:600; text-transform:uppercase;">Lojas</span></div>';
+            html += '</div>';
+            
+            html += '<div style="border-top:1px solid var(--border); padding-top:12px;">';
+            html += '<div style="font-size:0.8rem; font-weight:700; color:var(--text-secondary); margin-bottom:8px; display:flex; align-items:center; gap:6px;">';
+            html += '<i class="fa-solid fa-truck-fast"></i> Detalhamento por Veículo:</div>';
+            html += '<div style="display:flex; flex-wrap:wrap; gap:8px;">';
+            
+            var tipos = s.tiposCaminhao;
+            var temTipos = false;
+            
+            var tiposOrdenados = Object.keys(tipos).sort(function(a, b){ return tipos[b] - tipos[a]; });
+            
+            for(var t = 0; t < tiposOrdenados.length; t++){
+                var tipoChave = tiposOrdenados[t];
+                if(tipos[tipoChave] > 0){
+                    temTipos = true;
+                    var nomeAmigavel = mapaTipos[tipoChave] || tipoChave;
+                    var cor = coresTipos[tipoChave] || '#64748b';
+                    
+                    html += '<span style="background:' + cor + '; color:white; padding:6px 12px; border-radius:20px; font-size:0.8rem; font-weight:700; display:inline-flex; align-items:center; gap:6px; box-shadow:0 2px 4px rgba(0,0,0,0.1);">';
+                    html += '<i class="fa-solid fa-truck"></i> ' + nomeAmigavel + ': <strong>' + tipos[tipoChave] + '</strong>';
+                    html += '</span>';
+                }
+            }
+            
+            if(!temTipos){
+                html += '<span style="font-size:0.8rem; color:var(--text-secondary); font-style:italic;">⚠️ Nenhuma placa identificada (verifique o cadastro de placas)</span>';
+            }
+            
+            html += '</div></div></div>';
+        }
+    } else {
+        html = '<div style="text-align:center; color:var(--text-secondary); padding:20px; background:var(--card-bg); border-radius:12px;">';
+        html += '<i class="fa-solid fa-magnifying-glass" style="font-size:2rem; margin-bottom:8px; opacity:0.3;"></i>';
+        html += '<p>Nenhum carregador encontrado ou sem dados de carga.</p>';
+        html += '<p style="font-size:0.8rem; margin-top:8px;">Certifique-se de que os boxes possuem <strong>Placa</strong> e <strong>Carregador</strong> preenchidos.</p>';
+        html += '</div>';
+    }
+    
+    div.innerHTML = html;
+}
+function renderGradeBoxes(){var grade=document.getElementById('grade-boxes');if(!grade)return;var html='';for(var i=0;i<dadosApp.length;i++){var item=dadosApp[i];if(!item.selecionado)continue;var classe='livre';if(item.finalizado)classe='finalizado';else if(item.prontoParaEnviar)classe='pronto';else if(item.placa&&item.placa.trim()!=='')classe='andamento';var pc=item.placa?item.placa.substring(0,8):'';var lc=item.lojas?item.lojas.substring(0,10):'';html+='<div class="grade-box '+classe+'" onclick="scrollParaBox('+item.id+')"><div class="grade-box-numero">'+escapeHTML(item.numero.replace('Box ',''))+'</div>';if(pc)html+='<div class="grade-box-info">'+escapeHTML(pc)+'</div>';if(lc)html+='<div class="grade-box-loja">🏪 '+escapeHTML(lc)+'</div>';html+='</div>';}grade.innerHTML=html||'<p style="grid-column:1/-1;text-align:center;color:var(--text-secondary);font-size:.85rem">Nenhum box selecionado.</p>';}
+function scrollParaBox(id){var item=null;for(var i=0;i<dadosApp.length;i++){if(dadosApp[i].id==id){item=dadosApp[i];break;}}if(!item)return;if(item.oculto){item.oculto=false;salvarStorage();render();}setTimeout(function(){var el=document.getElementById('box-card-'+id);if(el){el.scrollIntoView({behavior:'smooth',block:'center'});el.style.boxShadow='0 0 0 4px var(--primary)';setTimeout(function(){el.style.boxShadow='';},2000);}},100);tocarSom('clique');}
+function renderTotalizadores(){document.getElementById('t1-boxes').innerText=dadosApp.length;var t1c=0,t1p=0,t1l=0;for(var i=0;i<dadosApp.length;i++){if(dadosApp[i].placa)t1c++;t1p+=somarValoresSeparados(dadosApp[i].palletsPrevistos);t1l+=contarLojas(dadosApp[i].lojas);}document.getElementById('t1-caminhoes').innerText=t1c;document.getElementById('t1-pallets').innerText=t1p;document.getElementById('t1-lojas').innerText=t1l;var t2p=0,t2l=0,t2pl=0;for(var j=0;j<dadosApp.length;j++){if(dadosApp[j].selecionado&&!dadosApp[j].finalizado){if(dadosApp[j].placa)t2p++;t2l+=contarLojas(dadosApp[j].lojas);t2pl+=somarValoresSeparados(dadosApp[j].palletsFinal);}}document.getElementById('t2-placas').innerText=t2p;document.getElementById('t2-lojas').innerText=t2l;document.getElementById('t2-pallets').innerText=t2pl;var r3p=0,r3l=0,r3pl=0;for(var k=0;k<dadosApp.length;k++){if(dadosApp[k].finalizado){if(dadosApp[k].placa)r3p++;r3l+=contarLojas(dadosApp[k].lojas);r3pl+=somarValoresSeparados(dadosApp[k].palletsFinal);}}document.getElementById('r3-total-placas').innerText=r3p;document.getElementById('r3-total-lojas').innerText=r3l;document.getElementById('r3-total-pallets').innerText=r3pl;}
+function gerarHTMLCardTab1(item){var capacidade=obterCapacidadePlaca(item.placa);var infoCap=capacidade?'<span class="capacidade-placa">🚛 '+escapeHTML(capacidade)+'</span>':'';var problemas=verificarProblemas(item);var tp=problemas.length>0;var bc=tp?'box-badge com-problema':'box-badge';var ai=tp?'<span class="problema-tooltip" style="margin-left:8px;font-size:1.2rem;cursor:help">⚠️<span class="problema-text">'+escapeHTML(problemas.join(' | '))+'</span></span>':'';var html='<div class="box-header">';html+='<label class="checkbox-container" style="margin-right:10px"><input type="checkbox" '+(item.selecionado?'checked':'')+' onchange="toggleSelecao('+item.id+')"></label>';html+='<span class="'+bc+'"><i class="fa-solid fa-box"></i> '+escapeHTML(item.numero)+'</span>'+ai;html+='<div style="display:flex;gap:6px;align-items:center;margin-left:auto">';html+='<button onclick="toggleOcultarBox('+item.id+')" class="btn-icon btn-olho"><i class="fa-solid fa-eye"></i></button>';html+='</div></div>';html+='<div style="margin-top:10px;font-size:.9rem;line-height:1.6">';html+='<div style="margin-bottom:10px;display:flex;align-items:center;gap:10px"><strong style="min-width:80px;color:var(--text-secondary)">Placa:</strong><input type="text" value="'+escapeHTML(item.placa||'')+'" onkeyup="updateCampoBox('+item.id+',\'placa\',this.value)" class="form-control input-destaque-bg" style="padding:10px;font-size:.9rem;flex:1;text-transform:uppercase">'+infoCap+'</div>';html+='<div style="margin-bottom:10px;display:flex;align-items:center;gap:10px"><strong style="min-width:80px;color:var(--text-secondary)">Lojas:</strong><input type="text" value="'+escapeHTML(item.lojas||'')+'" onkeyup="updateCampoBox('+item.id+',\'lojas\',this.value)" class="form-control input-lojas-destaque" style="padding:10px;font-size:.9rem;flex:1"></div>';html+='</div>';html += '<button onclick="salvarCardIndividual('+item.id+', this)" class="btn btn-primary" style="margin-top:14px; width:100%"><i class="fa-solid fa-floppy-disk"></i> Salvar Alterações</button>';return html;}
+function gerarHTMLCardTab2(item){var capacidade=obterCapacidadePlaca(item.placa);var infoCap=capacidade?'<span class="capacidade-placa">🚛 '+escapeHTML(capacidade)+'</span>':'';var pv=item.palletsPrevistos||item.palletsFinal||'0';var problemas=verificarProblemas(item);var tp=problemas.length>0;var bc=tp?'box-badge com-problema':'box-badge';var ai=tp?'<span class="problema-tooltip" style="margin-left:8px;font-size:1.2rem;cursor:help">⚠️<span class="problema-text">'+escapeHTML(problemas.join(' | '))+'</span></span>':'';var html='<div class="box-header">';html+='<span class="'+bc+'"><i class="fa-solid fa-box"></i> '+escapeHTML(item.numero)+'</span>'+ai;html+='<div style="display:flex;gap:6px;align-items:center;margin-left:auto">';html+='<button onclick="toggleOcultarBox('+item.id+')" class="btn-icon btn-olho"><i class="fa-solid fa-eye"></i></button>';html+='</div></div>';html+='<div style="margin-top:10px;font-size:.9rem;line-height:1.6">';html+='<div style="margin-bottom:8px;display:flex;align-items:center;gap:10px"><strong style="min-width:80px;color:var(--text-secondary)">Placa:</strong><input type="text" value="'+escapeHTML(item.placa||'')+'" onkeyup="updateCampoBox('+item.id+',\'placa\',this.value)" class="form-control input-destaque-bg" style="padding:10px;font-size:.9rem;flex:1;text-transform:uppercase">'+infoCap+'</div>';html+='<div style="margin-bottom:8px;display:flex;align-items:center;gap:10px"><strong style="min-width:80px;color:var(--text-secondary)">Lojas:</strong><input type="text" value="'+escapeHTML(item.lojas||'')+'" onkeyup="updateCampoBox('+item.id+',\'lojas\',this.value)" class="form-control input-lojas-destaque" style="padding:10px;font-size:.9rem;flex:1"></div>';html+='<div style="margin-bottom:8px;display:flex;align-items:center;gap:10px"><strong style="min-width:80px;color:var(--text-secondary)">Pallets:</strong><input type="text" value="'+escapeHTML(pv)+'" onkeyup="updateCampoBox('+item.id+',\'palletsPrevistos\',this.value)" class="form-control input-destaque-bg" style="padding:10px;font-size:.9rem;flex:1"><span id="total-pallets-'+item.id+'" style="color:var(--text-secondary);font-size:.8rem;min-width:80px;text-align:right">(Total: '+somarValoresSeparados(pv)+')</span></div>';html+='<div style="margin-bottom:8px;display:flex;align-items:center;gap:10px"><strong style="min-width:80px;color:var(--text-secondary)">Carga:</strong><input type="text" value="'+escapeHTML(item.numeroCarga||'')+'" onkeyup="updateCampoBox('+item.id+',\'numeroCarga\',this.value)" class="form-control input-destaque-bg" style="padding:10px;font-size:.9rem;flex:1"></div>';html+='<div style="margin-bottom:14px;display:flex;align-items:center;gap:10px"><strong style="min-width:80px;color:var(--text-secondary)">Carreg.:</strong><select onchange="updateCampoBox('+item.id+',\'carregador\',this.value)" class="form-control input-destaque-bg" style="padding:10px;font-size:.9rem;flex:1"><option value="">-- Selecione --</option>';var cs=carregadoresApp.slice().sort();for(var c=0;c<cs.length;c++){html+='<option value="'+escapeHTML(cs[c])+'" '+(cs[c]===item.carregador?'selected':'')+'>'+escapeHTML(cs[c])+'</option>';}html+='</select></div></div>';html += '<button onclick="salvarCardIndividual('+item.id+', this)" class="btn btn-primary" style="margin-top:14px; width:100%"><i class="fa-solid fa-floppy-disk"></i> Salvar Alterações</button>';return html;}
+function renderTab1(){var c1=document.getElementById('lista-boxes-tab1');if(!c1)return;c1.innerHTML='';var html='';for(var i=0;i<dadosApp.length;i++){var item=dadosApp[i];var problemas=verificarProblemas(item);if(item.oculto){var co='card box-oculto';if(boxTemDados(item))co+=' card-destaque-azul';html+='<div id="box-card-'+item.id+'" class="'+co+'"><div class="box-header"><span style="font-weight:700;color:var(--text);font-size:.95rem">'+escapeHTML(item.numero)+'</span><button onclick="toggleOcultarBox('+item.id+')" class="btn-icon btn-olho"><i class="fa-solid fa-eye-slash"></i></button></div></div>';}else{var cc='card';if(boxTemDados(item))cc+=' card-destaque-azul';if(problemas.length>0)cc+=' card-com-problema';html+='<div id="box-card-'+item.id+'" class="'+cc+'">'+gerarHTMLCardTab1(item)+'</div>';}}c1.innerHTML=html||'<p style="text-align:center;color:var(--text-secondary);padding:20px">Nenhum box.</p>';}
+function renderTab2(){var c2=document.getElementById('lista-boxes-tab2');if(!c2)return;c2.innerHTML='';var sel=[];for(var i=0;i<dadosApp.length;i++){if(dadosApp[i].selecionado)sel.push(dadosApp[i]);}sel.sort(function(a,b){if(a.prontoParaEnviar===b.prontoParaEnviar)return 0;return a.prontoParaEnviar?-1:1;});if(sel.length===0){c2.innerHTML='<p style="text-align:center;color:var(--text-secondary);padding:20px">Nenhum box selecionado. Volte à Aba 1.</p>';return;}var html='';for(var j=0;j<sel.length;j++){var item=sel[j];var problemas=verificarProblemas(item);if(item.prontoParaEnviar&&!item.finalizado){var cm='card card-minimizado';if(problemas.length>0)cm+=' card-com-problema';html+='<div id="box-card-'+item.id+'" class="'+cm+'"><div style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:10px"><div><span style="font-weight:bold;font-size:1.05rem"><i class="fa-solid fa-check-circle"></i> '+escapeHTML(item.numero)+' - Pronto</span><div style="font-size:0.8rem;opacity:0.9;margin-top:4px">'+escapeHTML(item.placa||'-')+' | '+escapeHTML(item.lojas||'-')+'</div></div><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end"><button onclick="toggleOcultarBox('+item.id+')" class="btn-reabrir"><i class="fa-solid fa-eye-slash"></i></button><button onclick="reabrirCard('+item.id+')" class="btn-reabrir"><i class="fa-solid fa-rotate-left"></i></button><button onclick="finalizarBoxIndividual('+item.id+')" class="btn-reabrir" style="background:#10b981;color:white;font-weight:700"><i class="fa-solid fa-check"></i> Finalizar</button></div></div></div>';}else if(item.oculto){var co2='card box-oculto';if(boxTemDados(item))co2+=' card-destaque-azul';html+='<div id="box-card-'+item.id+'" class="'+co2+'"><div class="box-header"><span style="font-weight:700;color:var(--text)">'+escapeHTML(item.numero)+'</span><button onclick="toggleOcultarBox('+item.id+')" class="btn-icon btn-olho"><i class="fa-solid fa-eye-slash"></i></button></div></div>';}else{var cc='card';if(boxTemDados(item))cc+=' card-destaque-azul';if(problemas.length>0)cc+=' card-com-problema';html+='<div id="box-card-'+item.id+'" class="'+cc+'">'+gerarHTMLCardTab2(item)+'<div class="status-btn-group"><button class="status-btn '+(item.carregado?'active':'')+'" onclick="toggleStatus('+item.id+',\'carregado\')">Carregado</button><button class="status-btn '+(item.lancado?'active':'')+'" onclick="toggleStatus('+item.id+',\'lancado\')">Lançado</button><button class="status-btn '+(item.notasEntregues?'active':'')+'" onclick="toggleStatus('+item.id+',\'notasEntregues\')">Notas OK</button></div></div>';}}c2.innerHTML=html;}
+function renderTab3(){var c3=document.getElementById('lista-boxes-tab3');if(!c3)return;var fi=[];for(var i=0;i<dadosApp.length;i++){if(dadosApp[i].finalizado)fi.push(dadosApp[i]);}var dataEl=document.getElementById('relatorio-data');if(dataEl)dataEl.innerText=new Date().toLocaleDateString('pt-BR',{weekday:'long',year:'numeric',month:'long',day:'numeric'});if(fi.length===0){c3.innerHTML='<p style="text-align:center;color:var(--text-secondary);padding:20px">Nenhuma carga finalizada.</p>';return;}var html='<table class="tabela-relatorio"><thead><tr><th class="col-box">BOX</th><th class="col-carga">CARGA</th><th class="col-placa">PLACA</th><th class="col-lojas">LOJAS</th><th class="col-pallets">PLT</th></tr></thead><tbody>';for(var j=0;j<fi.length;j++){var item=fi[j];html+='<tr><td class="col-box">'+escapeHTML(item.numero.replace('Box ',''))+'</td><td class="col-carga">'+escapeHTML(item.numeroCarga||'-')+'</td><td class="col-placa">'+escapeHTML(item.placa||'-')+'</td><td class="col-lojas">'+escapeHTML(item.lojas||'-')+'</td><td class="col-pallets">'+somarValoresSeparados(item.palletsFinal)+'</td></tr>';}html+='</tbody></table>';c3.innerHTML=html;}
+function render(){try{renderTotalizadores();var activeTab=document.querySelector('.tab-content.active');var activeId=activeTab?activeTab.id:'tab1';if(activeId==='tab1')renderTab1();else if(activeId==='tab2'){renderTab2();renderGradeBoxes();}else if(activeId==='tab3'){renderTab3();renderHistorico();}else if(activeId==='tab4'){renderTab4();carregarPreferenciasSom();}}catch(e){console.error('Erro no render:',e);}}
+window.addEventListener('load',function(){try{render();carregarPreferenciasSom();}catch(e){console.error('Erro:',e);}});
+</script>
+</body>
+</html>
